@@ -26,6 +26,22 @@ export default [
   },
 
   {
+    files: ['tests/**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+  },
+
+  {
     files: ['frontend/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 'latest',

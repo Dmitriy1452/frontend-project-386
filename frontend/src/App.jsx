@@ -1,14 +1,15 @@
-import { Button, Container, Title } from '@mantine/core'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import BookingPage from './pages/BookingPage'
+import MainPage from './pages/MainPage'
 
 function App() {
   return (
-    <Container py="xl">
-      <Title order={1}>My Project</Title>
-
-      <Button mt="md">
-        Frontend is working
-      </Button>
-    </Container>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+        <Route path="/booking" element={<BookingPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
