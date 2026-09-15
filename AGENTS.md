@@ -27,6 +27,18 @@ Install dependencies:
 npm install
 ```
 
+Regenerate the whole Design First chain (TypeSpec → OpenAPI → frontend SDK → backend artifacts):
+
+```bash
+npm run generate
+```
+
+The chain reads `spec/main.tsp` and writes:
+
+* `spec/dist/openapi.json` — emitted OpenAPI 3.1 contract
+* `frontend/src/api/generated/` — frontend SDK (`@hey-api/openapi-ts`)
+* `backend/src/gen/` — route scaffolds + validation schemas (see `scripts/generate-backend.js`) and backend types (`backend/src/gen/types/`)
+
 Start backend and frontend:
 
 ```bash
@@ -69,6 +81,8 @@ npm run build
 * Add automated tests to `tests/`.
 * Run tests and lint before committing changes.
 * Do not modify tests just to make them pass; fix the application code instead.
+* Generated files are never edited by hand. The generator outputs live in `spec/dist/`, `frontend/src/api/generated/` and `backend/src/gen/` and carry a DO NOT EDIT header; the source of truth is `spec/main.tsp` plus `scripts/generate-backend.js`. Regenerate with `npm run generate` instead of hand-editing.
+* Hand-written backend code (handlers, domain logic, storage) lives outside `backend/src/gen/`.
 
 ## Commit Messages
 

@@ -9,6 +9,9 @@ export default [
       'node_modules/**',
       'frontend/dist/**',
       'coverage/**',
+      'spec/dist/**',
+      'frontend/src/api/generated/**',
+      'backend/src/gen/**',
     ],
   },
 
@@ -16,6 +19,17 @@ export default [
 
   {
     files: ['backend/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  {
+    files: ['scripts/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

@@ -50,6 +50,9 @@ function MainPage() {
 
       <Box component="footer" mt="xl" ta="center">
         <Text size="sm" c="dimmed">
+          <Link to="/owner/types">Управление владельца: типы звонков</Link>
+        </Text>
+        <Text size="sm" c="dimmed" mt="xs">
           © Календарь звонков
         </Text>
       </Box>
