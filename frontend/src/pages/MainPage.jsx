@@ -53,6 +53,9 @@ function MainPage() {
           <Link to="/owner/types">Управление владельца: типы звонков</Link>
         </Text>
         <Text size="sm" c="dimmed" mt="xs">
+          <Link to="/owner/schedule">Управление владельца: календарь</Link>
+        </Text>
+        <Text size="sm" c="dimmed" mt="xs">
           © Календарь звонков
         </Text>
       </Box>

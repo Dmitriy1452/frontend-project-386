@@ -180,9 +180,17 @@ export type LocalTime = string;
  */
 export type Schedule = {
     /**
-     * По одному элементу на каждый день недели.
+     * Ровно по одному элементу на каждый день недели.
      */
-    days: Array<DaySchedule>;
+    days: [
+        DaySchedule,
+        DaySchedule,
+        DaySchedule,
+        DaySchedule,
+        DaySchedule,
+        DaySchedule,
+        DaySchedule
+    ];
 };
 
 /**

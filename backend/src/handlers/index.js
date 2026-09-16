@@ -13,6 +13,10 @@ function storeOf(request) {
   return request.server.bookingTypes
 }
 
+function scheduleStoreOf(request) {
+  return request.server.schedule
+}
+
 function duplicateTypeNameMessage(name) {
   return `Тип с названием «${name}» уже существует`
 }
@@ -77,8 +81,17 @@ export const handlers = {
 
   listSlots: notImplemented('listSlots'),
   createBooking: notImplemented('createBooking'),
-  getSchedule: notImplemented('getSchedule'),
-  putSchedule: notImplemented('putSchedule'),
+
+  getSchedule: async (request) => scheduleStoreOf(request).get(),
+
+  putSchedule: async (request, reply) => {
+    const result = scheduleStoreOf(request).set(request.body ?? {})
+    if (result.error === 'invalid') {
+      return reply.code(400).send({ message: result.message })
+    }
+    return reply.send(result.schedule)
+  },
+
   getCalendarWeek: notImplemented('getCalendarWeek'),
   listBookings: notImplemented('listBookings'),
   cancelBooking: notImplemented('cancelBooking'),

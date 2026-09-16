@@ -1,7 +1,9 @@
 import {
   createBookingType,
   deleteBookingType,
+  getSchedule,
   listBookingTypes,
+  putSchedule,
   updateBookingType,
 } from './generated/index.ts'
 
@@ -40,5 +42,13 @@ export const api = {
 
   deleteBookingType(id) {
     return unwrap(deleteBookingType({ path: { id } }))
+  },
+
+  getSchedule() {
+    return unwrap(getSchedule())
+  },
+
+  putSchedule(schedule) {
+    return unwrap(putSchedule({ body: schedule }))
   },
 }
