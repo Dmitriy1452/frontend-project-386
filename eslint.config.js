@@ -40,6 +40,17 @@ export default [
   },
 
   {
+    files: ['e2e/**/*.js', 'playwright.config.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  {
     files: ['tests/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
