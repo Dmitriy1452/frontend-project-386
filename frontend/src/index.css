@@ -12,3 +12,60 @@ body {
 main {
   padding: 2rem;
 }
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 64px repeat(7, minmax(0, 1fr));
+  border-top: 1px solid #dee2e6;
+  border-left: 1px solid #dee2e6;
+  margin-top: 12px;
+}
+
+.calendar-grid__time-header,
+.calendar-grid__day-header,
+.calendar-grid__time,
+.calendar-grid__cell {
+  box-sizing: border-box;
+  border-right: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.calendar-grid__day-header {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.calendar-grid__time {
+  padding: 4px 6px;
+  font-size: 11px;
+  color: #868e96;
+  text-align: right;
+}
+
+.calendar-grid__cell {
+  min-height: 24px;
+  padding: 2px 4px;
+}
+
+.calendar-grid__cell--open {
+  background: #ebfbee;
+}
+
+.calendar-grid__cell--occupied {
+  background: #fff3bf;
+}
+
+.calendar-grid__cell--closed {
+  background: #f1f3f5;
+}
+
+.calendar-grid__legend-dot {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 2px;
+  display: inline-block;
+}

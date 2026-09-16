@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { MantineProvider } from '@mantine/core'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../frontend/src/App.jsx'
@@ -15,6 +15,7 @@ vi.mock('../frontend/src/api/client.js', async (importOriginal) => {
     api: {
       getSchedule: vi.fn(),
       putSchedule: vi.fn(),
+      getCalendarWeek: vi.fn(),
     },
   }
 })
@@ -26,6 +27,10 @@ function closedWeek() {
       intervals: [],
     })),
   }
+}
+
+function emptyCalendar() {
+  return { weekStart: '2026-09-21', schedule: closedWeek(), bookings: [] }
 }
 
 function withMondayOpen(week = closedWeek()) {
@@ -43,7 +48,7 @@ function renderPage() {
   return render(
     <MantineProvider>
       <MemoryRouter initialEntries={['/owner/schedule']}>
-        <OwnerSchedulePage />
+        <OwnerSchedulePage now={new Date('2026-09-21T10:00:00')} />
       </MemoryRouter>
     </MantineProvider>,
   )
@@ -61,6 +66,10 @@ async function awaitSchedule() {
   await screen.findByRole('switch', { name: 'Понедельник' })
   return screen.getByRole('switch', { name: 'Понедельник' })
 }
+
+beforeEach(() => {
+  api.getCalendarWeek.mockResolvedValue(emptyCalendar())
+})
 
 afterEach(() => {
   vi.clearAllMocks()

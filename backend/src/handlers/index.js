@@ -6,14 +6,15 @@ import {
   validateBookingInput,
   validationErrorMessage as bookingValidationMessage,
 } from '../domain/bookings.js'
-import { generateSlots } from '../domain/slots.js'
-import { dayNumber, isValidDate } from '../domain/time.js'
+import { generateSlots, intervalsOverlap } from '../domain/slots.js'
+import {
+  addDays,
+  dateTimeToMinutes,
+  dayNumber,
+  isValidDate,
+} from '../domain/time.js'
 
-function notImplemented(name) {
-  return async () => {
-    throw new Error(`Handler "${name}" ещё не реализован (тикеты #12–#20)`)
-  }
-}
+const MINUTES_PER_DAY = 1440
 
 function storeOf(request) {
   return request.server.bookingTypes
@@ -157,7 +158,32 @@ export const handlers = {
     return reply.send(result.schedule)
   },
 
-  getCalendarWeek: notImplemented('getCalendarWeek'),
+  getCalendarWeek: async (request, reply) => {
+    const { weekStart } = request.query ?? {}
+    if (!isValidDate(weekStart)) {
+      return reply
+        .code(400)
+        .send({ message: 'weekStart должна быть датой в формате YYYY-MM-DD' })
+    }
+    const weekEnd = addDays(weekStart, 6)
+    const weekFrom = dayNumber(weekStart)
+    const weekTo = dayNumber(weekEnd)
+    const bookings = bookingsStoreOf(request)
+      .list()
+      .filter((booking) =>
+        intervalsOverlap(
+          dateTimeToMinutes(booking.start),
+          dateTimeToMinutes(booking.end),
+          weekFrom * MINUTES_PER_DAY,
+          (weekTo + 1) * MINUTES_PER_DAY,
+        ),
+      )
+    return reply.send({
+      weekStart,
+      schedule: scheduleStoreOf(request).get(),
+      bookings,
+    })
+  },
 
   listBookings: async (request, reply) => {
     const { scope, cursor, limit } = request.query ?? {}

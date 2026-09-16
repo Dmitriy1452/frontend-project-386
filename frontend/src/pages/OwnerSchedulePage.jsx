@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Button,
@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client.js'
+import { buildCalendarGrid, weekStartOf } from './calendarGrid.js'
 
 const DAY_NAMES = {
   1: 'Понедельник',
@@ -27,6 +28,17 @@ const DAY_NAMES = {
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
 
 const DEFAULT_INTERVAL = { start: '09:00', end: '10:00' }
+
+const STATE_LEGEND = [
+  { state: 'open', label: 'Открыто и свободно', color: '#ebfbee' },
+  { state: 'occupied', label: 'Открыто и занято', color: '#fff3bf' },
+  { state: 'closed', label: 'Закрыто', color: '#f1f3f5' },
+]
+
+function formatShortDate(date) {
+  const [year, month, day] = date.split('-')
+  return `${day}.${month}.${year}`
+}
 
 function validateSchedule(schedule) {
   for (const day of schedule.days) {
@@ -48,7 +60,74 @@ function validateSchedule(schedule) {
   return null
 }
 
-function OwnerSchedulePage() {
+function WeekGrid({ calendar }) {
+  const grid = buildCalendarGrid(calendar)
+  if (grid.rows.length === 0) {
+    return (
+      <Text c="dimmed" mt="md" data-testid="calendar-week-empty">
+        На этой неделе нет открытого времени и записей
+      </Text>
+    )
+  }
+  return (
+    <div data-testid="calendar-week-grid">
+      <div className="calendar-grid">
+        <div className="calendar-grid__time-header" />
+        {grid.dayHeaders.map((header) => (
+          <div
+            key={header.dayOfWeek}
+            className="calendar-grid__day-header"
+            data-testid={`calendar-day-${header.dayOfWeek}`}
+          >
+            {header.name} {formatShortDate(header.date)}
+          </div>
+        ))}
+        {grid.rows.map((row) => (
+          <Fragment key={row.from}>
+            <div
+              className="calendar-grid__time"
+              data-testid={`calendar-time-${row.from}`}
+            >
+              {row.hourLabel ?? ''}
+            </div>
+            {row.days.map((cell, offset) => {
+              const dayOfWeek = offset + 1
+              return (
+                <div
+                  key={`${row.from}-${dayOfWeek}`}
+                  className={`calendar-grid__cell calendar-grid__cell--${cell.state}`}
+                  data-state={cell.state}
+                  data-testid={`calendar-cell-${dayOfWeek}-${row.from}`}
+                >
+                  {cell.booking && (
+                    <Stack gap={0}>
+                      <Text
+                        size="xs"
+                        fw={600}
+                        data-testid={`calendar-visitor-${dayOfWeek}-${row.from}`}
+                      >
+                        {cell.booking.visitorName}
+                      </Text>
+                      <Text
+                        size="xs"
+                        c="dimmed"
+                        data-testid={`calendar-type-${dayOfWeek}-${row.from}`}
+                      >
+                        {cell.booking.typeName}
+                      </Text>
+                    </Stack>
+                  )}
+                </div>
+              )
+            })}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function OwnerSchedulePage({ now = new Date() }) {
   const [schedule, setSchedule] = useState(null)
   const [loadError, setLoadError] = useState(null)
 
@@ -56,12 +135,18 @@ function OwnerSchedulePage() {
   const [saveError, setSaveError] = useState(null)
   const [saved, setSaved] = useState(false)
 
+  const [calendar, setCalendar] = useState(null)
+
+  const weekStart = useMemo(() => weekStartOf(now), [now])
+
   useEffect(() => {
-    api
-      .getSchedule()
-      .then(setSchedule)
+    Promise.all([api.getSchedule(), api.getCalendarWeek(weekStart)])
+      .then(([scheduleData, calendarData]) => {
+        setSchedule(scheduleData)
+        setCalendar(calendarData)
+      })
       .catch((error) => setLoadError(error.message))
-  }, [])
+  }, [weekStart])
 
   function updateDay(dayOfWeek, updater) {
     setSchedule((current) => ({
@@ -116,6 +201,9 @@ function OwnerSchedulePage() {
     try {
       const result = await api.putSchedule(schedule)
       setSchedule(result)
+      setCalendar((current) =>
+        current === null ? current : { ...current, schedule: result },
+      )
       setSaved(true)
     } catch (error) {
       setSaveError(
@@ -235,6 +323,22 @@ function OwnerSchedulePage() {
           <Button mt="lg" size="md" onClick={handleSave} loading={saving}>
             Сохранить расписание
           </Button>
+
+          <Title order={2} mt="xl">
+            Недельная сетка
+          </Title>
+          <Group gap="lg" mt="xs">
+            {STATE_LEGEND.map((item) => (
+              <Group key={item.state} gap={6} wrap="nowrap">
+                <span
+                  className="calendar-grid__legend-dot"
+                  style={{ background: item.color }}
+                />
+                <Text size="sm">{item.label}</Text>
+              </Group>
+            ))}
+          </Group>
+          <WeekGrid calendar={calendar} />
         </>
       )}
     </Container>

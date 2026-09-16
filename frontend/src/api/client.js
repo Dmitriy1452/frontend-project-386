@@ -3,6 +3,7 @@ import {
   createBooking,
   createBookingType,
   deleteBookingType,
+  getCalendarWeek,
   getSchedule,
   listBookingTypes,
   listBookings,
@@ -77,5 +78,9 @@ export const api = {
 
   putSchedule(schedule) {
     return unwrap(putSchedule({ body: schedule }))
+  },
+
+  getCalendarWeek(weekStart) {
+    return unwrap(getCalendarWeek({ query: { weekStart } }))
   },
 }
