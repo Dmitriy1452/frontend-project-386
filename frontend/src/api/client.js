@@ -1,9 +1,11 @@
 import {
+  cancelBooking,
   createBooking,
   createBookingType,
   deleteBookingType,
   getSchedule,
   listBookingTypes,
+  listBookings,
   listSlots,
   putSchedule,
   updateBookingType,
@@ -32,6 +34,21 @@ async function unwrap(result) {
 export const api = {
   listBookingTypes() {
     return unwrap(listBookingTypes())
+  },
+
+  listBookings(scope, cursor, limit) {
+    const query = { scope }
+    if (cursor !== undefined && cursor !== null) {
+      query.cursor = cursor
+    }
+    if (limit !== undefined && limit !== null) {
+      query.limit = limit
+    }
+    return unwrap(listBookings({ query }))
+  },
+
+  cancelBooking(id) {
+    return unwrap(cancelBooking({ path: { id } }))
   },
 
   listSlots(typeId, from, to) {

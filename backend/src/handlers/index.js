@@ -158,6 +158,25 @@ export const handlers = {
   },
 
   getCalendarWeek: notImplemented('getCalendarWeek'),
-  listBookings: notImplemented('listBookings'),
-  cancelBooking: notImplemented('cancelBooking'),
+
+  listBookings: async (request, reply) => {
+    const { scope, cursor, limit } = request.query ?? {}
+    const result = bookingsStoreOf(request).page({ scope, cursor, limit })
+    if (result.error === 'invalid') {
+      return reply.code(400).send({ message: result.message })
+    }
+    return reply.send(result)
+  },
+
+  cancelBooking: async (request, reply) => {
+    const { id } = request.params
+    const result = bookingsStoreOf(request).cancel(id)
+    if (result.error === 'notFound') {
+      return reply.code(404).send({ message: 'Запись не найдена' })
+    }
+    if (result.error === 'alreadyCancelled') {
+      return reply.code(409).send({ message: 'Запись уже отменена' })
+    }
+    return reply.send(result.booking)
+  },
 }

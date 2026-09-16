@@ -25,6 +25,49 @@ import { intervalsOverlap } from './slots.js'
 const WINDOW_DAYS = 14
 const MINUTES_PER_DAY = 1440
 
+const DEFAULT_PAGE_LIMIT = 100
+const MAX_PAGE_LIMIT = 100
+
+/**
+ * Курсор «по ключу»: позиция в отсортированном списке, закодированная как
+ * (start, id) последней выданной записи. Клиент не должен раскрывать его
+ * содержимое; сервер лишь продолжает выдачу строго после этого ключа.
+ */
+function encodeCursor(start, id) {
+  return Buffer.from(`${start}|${id}`, 'utf8').toString('base64url')
+}
+
+function decodeCursor(cursor) {
+  let decoded
+  try {
+    decoded = Buffer.from(cursor, 'base64url').toString('utf8')
+  } catch {
+    return null
+  }
+  const separator = decoded.lastIndexOf('|')
+  if (separator < 0) {
+    return null
+  }
+  const start = decoded.slice(0, separator)
+  const id = decoded.slice(separator + 1)
+  if (!isValidLocalDateTime(start) || id === '') {
+    return null
+  }
+  return { start, id }
+}
+
+/** Стоит ли запись строго после курсора в направлении сортировки. */
+function startsAfter(booking, anchor, isFuture) {
+  const bookingStart = dateTimeToMinutes(booking.start)
+  const anchorStart = dateTimeToMinutes(anchor.start)
+  if (bookingStart !== anchorStart) {
+    return isFuture ? bookingStart > anchorStart : bookingStart < anchorStart
+  }
+  return isFuture
+    ? booking.id > anchor.id
+    : booking.id < anchor.id
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
 
 export function validateBookingInput(input = {}) {
@@ -54,6 +97,65 @@ export function createBookingsStore({ bookingTypes, schedule, now } = {}) {
 
   function list() {
     return structuredClone(bookings)
+  }
+
+  /**
+   * Страница списка записей владельца в выбранном временном диапазоне.
+   * Будущие (start >= «сейчас») сортируются по возрастанию, прошедшие
+   * (start < «сейчас») — по убыванию. Отменённые записи остаются в своей
+   * временной группе. Пагинация — курсор «по ключу» (start, id) плюс limit,
+   * поэтому удаление или отмена записей между страницами не сдвигает выдачу.
+   */
+  function page({ scope, cursor, limit } = {}) {
+    const requestedLimit = limit === undefined ? DEFAULT_PAGE_LIMIT : Number(limit)
+    if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > MAX_PAGE_LIMIT) {
+      return { error: 'invalid', message: 'limit должен быть целым числом от 1 до 100' }
+    }
+    const anchor = cursor === undefined || cursor === null ? null : decodeCursor(cursor)
+    if (cursor !== undefined && cursor !== null && anchor === null) {
+      return { error: 'invalid', message: 'cursor указан некорректно' }
+    }
+
+    const isFuture = scope === 'future'
+    const nowMinutes = dateTimeToMinutes(currentNow())
+    const selected = bookings.filter((booking) => {
+      const startMinutes = dateTimeToMinutes(booking.start)
+      return isFuture ? startMinutes >= nowMinutes : startMinutes < nowMinutes
+    })
+    const sorted = [...selected].sort((a, b) => {
+      const aStart = dateTimeToMinutes(a.start)
+      const bStart = dateTimeToMinutes(b.start)
+      const byTime = isFuture ? aStart - bStart : bStart - aStart
+      return byTime !== 0 ? byTime : isFuture ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id)
+    })
+
+    let startIndex = 0
+    if (anchor) {
+      startIndex = sorted.findIndex((item) => startsAfter(item, anchor, isFuture))
+      if (startIndex === -1) {
+        return { items: [] }
+      }
+    }
+
+    const items = sorted.slice(startIndex, startIndex + requestedLimit)
+    const hasMore = startIndex + requestedLimit < sorted.length
+    const lastItem = items[items.length - 1]
+    return {
+      items: structuredClone(items),
+      ...(hasMore && lastItem ? { nextCursor: encodeCursor(lastItem.start, lastItem.id) } : {}),
+    }
+  }
+
+  function cancel(id) {
+    const booking = bookings.find((item) => item.id === id)
+    if (!booking) {
+      return { error: 'notFound' }
+    }
+    if (booking.status === 'cancelled') {
+      return { error: 'alreadyCancelled' }
+    }
+    booking.status = 'cancelled'
+    return { booking: structuredClone(booking) }
   }
 
   function conflict({ type, start, durationMinutes }) {
@@ -138,5 +240,5 @@ export function createBookingsStore({ bookingTypes, schedule, now } = {}) {
     return { booking }
   }
 
-  return { list, create }
+  return { list, create, page, cancel }
 }
