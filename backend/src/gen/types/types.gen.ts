@@ -165,7 +165,9 @@ export type ErrorBody = {
 export type LocalDate = string;
 
 /**
- * Момент времени, RFC 3339, в локальном времени владельца.
+ * Момент времени в локальном времени владельца без смещения часового
+ * пояса: «YYYY-MM-DDTHH:MM:SS». Формат соответствует LocalDate/LocalTime;
+ * конвертация часовых поясов не предусмотрена (см. описание сервиса).
  */
 export type LocalDateTime = string;
 

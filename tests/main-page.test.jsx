@@ -56,7 +56,9 @@ describe('страница записи', () => {
     expect(
       screen.getByRole('heading', { name: 'Запись на звонок' }),
     ).toBeTruthy()
-    expect(screen.getByText('Здесь появится запись на звонок')).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: 'Назад на главную' }),
+    ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('link', { name: 'Назад на главную' }))
 

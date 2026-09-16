@@ -2,6 +2,12 @@ import {
   validateBookingTypeInput,
   validationErrorMessage,
 } from '../domain/bookingTypes.js'
+import {
+  validateBookingInput,
+  validationErrorMessage as bookingValidationMessage,
+} from '../domain/bookings.js'
+import { generateSlots } from '../domain/slots.js'
+import { dayNumber, isValidDate } from '../domain/time.js'
 
 function notImplemented(name) {
   return async () => {
@@ -15,6 +21,14 @@ function storeOf(request) {
 
 function scheduleStoreOf(request) {
   return request.server.schedule
+}
+
+function bookingsStoreOf(request) {
+  return request.server.bookings
+}
+
+function nowOf(request) {
+  return request.server.now()
 }
 
 function duplicateTypeNameMessage(name) {
@@ -79,8 +93,59 @@ export const handlers = {
     return reply.code(204).send()
   },
 
-  listSlots: notImplemented('listSlots'),
-  createBooking: notImplemented('createBooking'),
+  listSlots: async (request, reply) => {
+    const { typeId } = request.params
+    const { from, to } = request.query ?? {}
+    const type = storeOf(request).list().find((item) => item.id === typeId)
+    if (!type) {
+      return reply.code(400).send({ message: 'Тип звонка не найден' })
+    }
+    if (!isValidDate(from) || !isValidDate(to)) {
+      return reply
+        .code(400)
+        .send({ message: 'Даты должны быть в формате YYYY-MM-DD' })
+    }
+    if (dayNumber(from) > dayNumber(to)) {
+      return reply
+        .code(400)
+        .send({ message: 'Дата начала не может быть позже даты конца' })
+    }
+    const slots = generateSlots({
+      schedule: scheduleStoreOf(request).get(),
+      bookings: bookingsStoreOf(request).list(),
+      type,
+      from,
+      to,
+      now: nowOf(request),
+    })
+    return reply.send(slots)
+  },
+
+  createBooking: async (request, reply) => {
+    const body = request.body ?? {}
+    const input = {
+      typeId: body.typeId,
+      start: body.start,
+      name: typeof body.name === 'string' ? body.name.trim() : '',
+      email: typeof body.email === 'string' ? body.email.trim() : '',
+      comment: body.comment,
+    }
+    if (body.comment !== undefined && typeof body.comment !== 'string') {
+      return reply.code(400).send({ message: 'Комментарий должен быть строкой' })
+    }
+    const errors = validateBookingInput(input)
+    if (Object.keys(errors).length > 0) {
+      return reply.code(400).send({ message: bookingValidationMessage(errors) })
+    }
+    const result = bookingsStoreOf(request).create(input)
+    if (result.error === 'notFound') {
+      return reply.code(400).send({ message: 'Тип звонка не найден' })
+    }
+    if (result.error === 'conflict') {
+      return reply.code(409).send({ message: result.message })
+    }
+    return reply.code(201).send(result.booking)
+  },
 
   getSchedule: async (request) => scheduleStoreOf(request).get(),
 

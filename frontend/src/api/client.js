@@ -1,8 +1,10 @@
 import {
+  createBooking,
   createBookingType,
   deleteBookingType,
   getSchedule,
   listBookingTypes,
+  listSlots,
   putSchedule,
   updateBookingType,
 } from './generated/index.ts'
@@ -30,6 +32,14 @@ async function unwrap(result) {
 export const api = {
   listBookingTypes() {
     return unwrap(listBookingTypes())
+  },
+
+  listSlots(typeId, from, to) {
+    return unwrap(listSlots({ path: { typeId }, query: { from, to } }))
+  },
+
+  createBooking(body) {
+    return unwrap(createBooking({ body }))
   },
 
   createBookingType(body) {
